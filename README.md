@@ -33,6 +33,8 @@ Before using the MCP server, ensure you have:
 
 ### Running the Server
 
+#### Production Mode
+
 Run the MCP server directly:
 ```bash
 python src/besser_mcp_server/server.py
@@ -43,6 +45,19 @@ Or install the package and run it:
 pip install -e .
 python -m besser_mcp_server.server
 ```
+
+#### Development Mode
+
+For development and debugging, use the MCP development server which includes the MCP inspector:
+```bash
+mcp dev src/besser_mcp_server/server.py
+```
+
+This will:
+- Start the server in development mode
+- Launch the MCP inspector in your browser for interactive testing
+- Provide detailed logging and debugging information
+- Allow you to test tools directly without configuring a client
 
 ### Configuring MCP Clients
 
