@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "besser-mcp-server"
+version = "0.1.0"
+description = "Minimal MCP server for the BESSER platform"
+authors = [
+    { name = "BESSER Team", email = "info@besser-pearl.org" }
+]
+readme = "README.md"
+requires-python = ">=3.10"
+
+# Core runtime dependencies
+dependencies = [
+    "mcp[cli]>=0.1.0"
+]
+
+[project.optional-dependencies]
+# Development dependencies
+dev = [
+    "uv>=0.7.0",          # Modern package/dependency manager
+    "pytest>=7.0.0",      # Testing framework
+    "black>=23.0.0",      # Code formatter
+    "flake8>=6.0.0"       # Linting
+] 

@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "besser-mcp-server": {
+      "command": "python",
+      "args": [
+        "C:\\repos\\tools\\BESSER-MCP-Server\\src\\besser_mcp_server\\server.py"
+      ],
+      "env": {
+        "PYTHONPATH": "C:\\repos\\tools\\BESSER-MCP-Server\\src"
+      }
+    }
+  }
+} 
