@@ -13,6 +13,7 @@ The BESSER MCP Server provides the following tools:
 - **`about`**: Get information about BESSER and this MCP server
 - **`new_model`**: Create a new B-UML DomainModel with a specified name  
 - **`add_class`**: Add a new Class to an existing DomainModel (with duplicate name detection)
+- **`get_model_info`**: Get detailed information about an existing domain model (classes, attributes, methods, relationships)
 - **`sql_generation`**: Generate SQL representation from a domain model using BESSER's SQL generator
 
 ## Prerequisites
@@ -142,6 +143,7 @@ After configuring your MCP client:
    - "What is BESSER?" (uses the `about` tool)
    - "Create a new domain model called 'MyModel'" (uses `new_model`)
    - "Add a class named 'Person' to the model" (uses `add_class`)
+   - "Show me information about the domain model" (uses `get_model_info`)
    - "Generate SQL from the domain model" (uses `sql_generation`)
 
 ### Validation
@@ -182,6 +184,9 @@ Assistant: [Uses add_class tool to add the Customer class]
 
 User: "Add a Product class as well"
 Assistant: [Uses add_class tool to add the Product class]
+
+User: "Show me information about the current domain model"
+Assistant: [Uses get_model_info tool to display model structure, classes, and relationships]
 
 User: "Generate SQL from this domain model"
 Assistant: [Uses sql_generation tool to create SQL representation]

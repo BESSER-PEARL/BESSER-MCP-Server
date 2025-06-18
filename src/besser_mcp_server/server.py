@@ -3,17 +3,96 @@
 BESSER MCP Server - A minimal Model Context Protocol server for BESSER.
 
 This module provides a complete MCP server implementation for BESSER's
-low-code modeling platform capabilities.
+low-code modeling platform capabilities with serializable domain models.
 """
 
 import asyncio
+import base64
+import io
 import logging
 import sys
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
 from mcp.server import FastMCP
 
 mcp = FastMCP("besser-mcp-server")
+
+def serialize_domain_model(domain_model) -> str:
+    """Convert a domain model to a base64 string using BESSER's native ModelSerializer."""
+    try:
+        from besser.utilities.utils import ModelSerializer
+        import tempfile
+        import os
+        
+        # Create a ModelSerializer instance
+        serializer = ModelSerializer()
+        
+        # Create a temporary file
+        with tempfile.NamedTemporaryFile(suffix='.buml', delete=False) as temp_file:
+            temp_path = temp_file.name
+        
+        try:
+            # Use BESSER's native dump method
+            serializer.dump(domain_model, output_file_name=temp_path)
+            
+            # Read the serialized file and convert to base64
+            with open(temp_path, 'rb') as f:
+                pickled_data = f.read()
+            
+            # Convert to base64 for string representation
+            encoded_data = base64.b64encode(pickled_data).decode('ascii')
+            
+            return encoded_data
+        finally:
+            # Clean up temporary file
+            if os.path.exists(temp_path):
+                os.unlink(temp_path)
+                
+    except Exception as e:
+        return f"Error serializing model: {str(e)}"
+
+def deserialize_domain_model(model_base64: str):
+    """Convert a base64 string back to a domain model object using BESSER's native ModelSerializer."""
+    try:
+        from besser.utilities.utils import ModelSerializer
+        from besser.BUML.metamodel.structural import DomainModel
+        import tempfile
+        import os
+        
+        # Create a ModelSerializer instance  
+        serializer = ModelSerializer()
+        
+        # Decode from base64
+        pickled_data = base64.b64decode(model_base64.encode('ascii'))
+        
+        # Create a temporary file
+        with tempfile.NamedTemporaryFile(suffix='.buml', delete=False) as temp_file:
+            temp_path = temp_file.name
+            temp_file.write(pickled_data)
+        
+        try:
+            # Use BESSER's native load method
+            loaded_model = serializer.load(temp_path)
+            
+            # Create a fresh domain model to avoid serialization corruption
+            fresh_model = DomainModel(loaded_model.name)
+            
+            # Transfer non-primitive types (classes) from loaded model to fresh model
+            primitive_names = {'int', 'str', 'float', 'bool', 'datetime', 'date', 'time', 'timedelta', 'any'}
+            for type_obj in loaded_model.types:
+                type_name = getattr(type_obj, 'name', str(type_obj))
+                if type_name not in primitive_names:
+                    # This is a custom class, add it to the fresh model
+                    fresh_model.add_type(type_obj)
+            
+            return fresh_model
+        finally:
+            # Clean up temporary file
+            if os.path.exists(temp_path):
+                os.unlink(temp_path)
+                
+    except Exception as e:
+        raise RuntimeError(f"Error deserializing model: {str(e)}")
 
 @mcp.tool()
 def about() -> str:
@@ -24,7 +103,7 @@ def about() -> str:
 
 @mcp.tool()
 async def add_class(
-    domain_model,
+    domain_model_base64: str,
     name: str,
     attributes=None,
     methods=None,
@@ -34,11 +113,11 @@ async def add_class(
     timestamp=None,
     metadata=None,
     is_derived: bool = False,
-):
-    """Adds a new `Class` instance to a B-UML DomainModel and returns the updated model.
+) -> str:
+    """Adds a new `Class` instance to a B-UML DomainModel and returns the updated model as base64.
 
     Args:
-        domain_model (DomainModel): The B-UML domain model to extend.
+        domain_model_base64 (str): The B-UML domain model as base64 string.
         name (str): Name of the class.
         attributes (set[Property] | None): Attributes set (default None).
         methods (set[Method] | None): Methods set (default None).
@@ -50,8 +129,8 @@ async def add_class(
         is_derived (bool): Whether the class element is derived.
 
     Returns:
-        DomainModel | str: The same model instance with the new class, or an error message
-                          if a class with the same name already exists.
+        str: The updated domain model as base64 string, or an error message
+             if a class with the same name already exists.
     """
     from datetime import datetime
     from datetime import timezone
@@ -63,43 +142,56 @@ async def add_class(
             "BESSER library must be installed (`pip install besser`)."
         ) from exc
 
-    if timestamp is None:
-        timestamp = datetime.now(timezone.utc)
-
-    # Default to empty sets if None provided
-    attributes = attributes or set()
-    methods = methods or set()
-    behaviors = behaviors or set()
-
-    new_class = Class(
-        name=name,
-        attributes=attributes,
-        methods=methods,
-        is_abstract=is_abstract,
-        is_read_only=is_read_only,
-        behaviors=behaviors,
-        timestamp=timestamp,  # type: ignore[arg-type]
-        metadata=metadata,
-        is_derived=is_derived,
-    )
-
-    # Add the class through the proper helper to ensure all internal structures are updated
     try:
+        # Deserialize the domain model
+        domain_model = deserialize_domain_model(domain_model_base64)
+        
+        if timestamp is None:
+            timestamp = datetime.now(timezone.utc)
+
+        # Default to empty sets if None provided
+        attributes = attributes or set()
+        methods = methods or set()
+        behaviors = behaviors or set()
+
+        new_class = Class(
+            name=name,
+            attributes=attributes,
+            methods=methods,
+            is_abstract=is_abstract,
+            is_read_only=is_read_only,
+            behaviors=behaviors,
+            timestamp=timestamp,  # type: ignore[arg-type]
+            metadata=metadata,
+            is_derived=is_derived,
+        )
+
+        # Check if a type with the same name already exists
+        existing_names = {getattr(t, 'name', str(t)) for t in domain_model.types}
+        if name in existing_names:
+            return f"Error adding class '{name}': A type with name '{name}' already exists in the model"
+        
+        # Use BESSER's proper add_type method (now that duplicates are fixed)
         domain_model.add_type(new_class)  # type: ignore[attr-defined]
-        return domain_model
+        
+        # Return the updated model as base64
+        return serialize_domain_model(domain_model)
+        
     except ValueError as e:
         # Return error message if class with same name already exists
         return f"Error adding class '{name}': {str(e)}"
+    except Exception as e:
+        return f"Error processing domain model: {str(e)}"
 
 @mcp.tool()
-async def new_model(name: str):
-    """Creates a new B-UML DomainModel with the specified name.
+async def new_model(name: str) -> str:
+    """Creates a new B-UML DomainModel with the specified name and returns it as base64.
 
     Args:
         name (str): Name of the new domain model.
 
     Returns:
-        DomainModel: A new domain model instance with the given name.
+        str: A new domain model instance as base64 string.
     """
     try:
         from besser.BUML.metamodel.structural import DomainModel  # type: ignore
@@ -108,15 +200,16 @@ async def new_model(name: str):
             "BESSER library must be installed (`pip install besser`)."
         ) from exc
 
-    # Create and return a new DomainModel instance
-    return DomainModel(name=name)
+    # Create and return a new DomainModel instance as base64
+    domain_model = DomainModel(name=name)
+    return serialize_domain_model(domain_model)
 
 @mcp.tool()
-async def sql_generation(domain_model):
-    """Given a domain model, it creates a SQL representation of the model.
+async def sql_generation(domain_model_base64: str) -> str:
+    """Given a domain model as base64, it creates a SQL representation of the model.
 
     Args:
-        domain_model (DomainModel): The B-UML domain model to generate SQL from.
+        domain_model_base64 (str): The B-UML domain model as base64 string.
 
     Returns:
         str: SQL representation of the domain model, or an error message if generation fails.
@@ -130,6 +223,9 @@ async def sql_generation(domain_model):
         ) from exc
 
     try:
+        # Deserialize the domain model
+        domain_model = deserialize_domain_model(domain_model_base64)
+        
         # Check every class in the domain model and ensure it has at least one attribute
         classes = domain_model.get_classes()
         
@@ -184,12 +280,36 @@ async def sql_generation(domain_model):
         # Return error message if SQL generation fails
         return f"Error generating SQL from domain model: {str(e)}"
 
+@mcp.tool()
+async def get_model_info(domain_model_base64: str) -> str:
+    """Get detailed information about a domain model.
+
+    Args:
+        domain_model_base64 (str): The B-UML domain model as base64 string.
+
+    Returns:
+        str: Detailed information about the domain model.
+    """
+    try:
+        domain_model = deserialize_domain_model(domain_model_base64)
+        classes = domain_model.get_classes()
+        
+        info = [f"Domain Model: {domain_model.name}"]
+        info.append(f"Total types: {len(domain_model.types)}")
+        info.append(f"Classes: {len(classes)}")
+        
+        if classes:
+            info.append("Class details:")
+            for cls in classes:
+                info.append(f"  - {cls.name} ({len(cls.attributes)} attributes)")
+                for attr in cls.attributes:
+                    attr_type = attr.type.name if hasattr(attr.type, 'name') else str(attr.type)
+                    info.append(f"    * {attr.name}: {attr_type}")
+        
+        return "\n".join(info)
+    except Exception as e:
+        return f"Error getting model info: {str(e)}"
+
 if __name__ == "__main__":
     mcp.run() 
 
-# ---------------------------------------------------------------------------
-# Backward-compatibility alias (to be removed in a future major version)
-# ---------------------------------------------------------------------------
-
-# Alias using the old, non-PEP8 compliant name so existing integrations keep working
-addClass = add_class  # pylint: disable=invalid-name 
