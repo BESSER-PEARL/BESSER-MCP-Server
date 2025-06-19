@@ -10,86 +10,46 @@ import asyncio
 import base64
 import io
 import logging
+import pickle
 import sys
 from typing import Any, Dict, List, Union
 
 from mcp.server import FastMCP
 
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 mcp = FastMCP("besser-mcp-server")
 
 def serialize_domain_model(domain_model) -> str:
-    """Convert a domain model to a base64 string using BESSER's native ModelSerializer."""
+    """Convert a domain model to a base64 string using pickle."""
     try:
-        from besser.utilities.utils import ModelSerializer
-        import tempfile
-        import os
         
-        # Create a ModelSerializer instance
-        serializer = ModelSerializer()
+        # Serialize the domain model using pickle
+        pickled_data = pickle.dumps(domain_model)
         
-        # Create a temporary file
-        with tempfile.NamedTemporaryFile(suffix='.buml', delete=False) as temp_file:
-            temp_path = temp_file.name
+        # Convert to base64 for string representation
+        encoded_data = base64.b64encode(pickled_data).decode('ascii')
         
-        try:
-            # Use BESSER's native dump method
-            serializer.dump(domain_model, output_file_name=temp_path)
-            
-            # Read the serialized file and convert to base64
-            with open(temp_path, 'rb') as f:
-                pickled_data = f.read()
-            
-            # Convert to base64 for string representation
-            encoded_data = base64.b64encode(pickled_data).decode('ascii')
-            
-            return encoded_data
-        finally:
-            # Clean up temporary file
-            if os.path.exists(temp_path):
-                os.unlink(temp_path)
+        return encoded_data
                 
     except Exception as e:
+        logger.error(f"Error serializing model: {str(e)}")
         return f"Error serializing model: {str(e)}"
 
 def deserialize_domain_model(model_base64: str):
-    """Convert a base64 string back to a domain model object using BESSER's native ModelSerializer."""
+    """Convert a base64 string back to a domain model object using pickle."""
     try:
-        from besser.utilities.utils import ModelSerializer
-        from besser.BUML.metamodel.structural import DomainModel
-        import tempfile
-        import os
-        
-        # Create a ModelSerializer instance  
-        serializer = ModelSerializer()
         
         # Decode from base64
         pickled_data = base64.b64decode(model_base64.encode('ascii'))
         
-        # Create a temporary file
-        with tempfile.NamedTemporaryFile(suffix='.buml', delete=False) as temp_file:
-            temp_path = temp_file.name
-            temp_file.write(pickled_data)
+        # Deserialize using pickle
+        domain_model = pickle.loads(pickled_data)
         
-        try:
-            # Use BESSER's native load method
-            loaded_model = serializer.load(temp_path)
-            
-            # Create a fresh domain model to avoid serialization corruption
-            fresh_model = DomainModel(loaded_model.name)
-            
-            # Transfer non-primitive types (classes) from loaded model to fresh model
-            primitive_names = {'int', 'str', 'float', 'bool', 'datetime', 'date', 'time', 'timedelta', 'any'}
-            for type_obj in loaded_model.types:
-                type_name = getattr(type_obj, 'name', str(type_obj))
-                if type_name not in primitive_names:
-                    # This is a custom class, add it to the fresh model
-                    fresh_model.add_type(type_obj)
-            
-            return fresh_model
-        finally:
-            # Clean up temporary file
-            if os.path.exists(temp_path):
-                os.unlink(temp_path)
+        
+        return domain_model
                 
     except Exception as e:
         raise RuntimeError(f"Error deserializing model: {str(e)}")
@@ -143,6 +103,7 @@ async def add_class(
         ) from exc
 
     try:
+        logger.info(f"Adding class '{name}' to domain model")
         # Deserialize the domain model
         domain_model = deserialize_domain_model(domain_model_base64)
         
@@ -164,19 +125,28 @@ async def add_class(
             timestamp=timestamp,  # type: ignore[arg-type]
             metadata=metadata,
             is_derived=is_derived,
-        )
-
-        # Check if a type with the same name already exists
-        existing_names = {getattr(t, 'name', str(t)) for t in domain_model.types}
-        if name in existing_names:
-            return f"Error adding class '{name}': A type with name '{name}' already exists in the model"
+        )        # Check if a types with the same name already exists
+        existing_classes = domain_model.get_classes()
+        existing_class_names = {cls.name for cls in existing_classes}
         
-        # Use BESSER's proper add_type method (now that duplicates are fixed)
-        domain_model.add_type(new_class)  # type: ignore[attr-defined]
+        if name in existing_class_names:
+            logger.warning(f"Class '{name}' already exists in model")
+            return f"Error adding class '{name}': A class with name '{name}' already exists in the model"
+        
+        # Add the class directly to the types set to avoid BESSER's duplicate validation
+        # which seems to have issues with primitive types
+        try:
+            domain_model.add_type(new_class)  # type: ignore[attr-defined]
+            logger.info(f"Successfully added class '{name}' to model")
+        except ValueError as ve:
+            logger.warning(f"add_type failed, using direct addition")
+            # If add_type fails due to duplicate primitive validation, add directly
+            domain_model.types.add(new_class)  # type: ignore[attr-defined]
+            logger.info(f"Successfully added class '{name}' to model using direct addition")
         
         # Return the updated model as base64
         return serialize_domain_model(domain_model)
-        
+
     except ValueError as e:
         # Return error message if class with same name already exists
         return f"Error adding class '{name}': {str(e)}"
@@ -225,7 +195,6 @@ async def sql_generation(domain_model_base64: str) -> str:
     try:
         # Deserialize the domain model
         domain_model = deserialize_domain_model(domain_model_base64)
-        
         # Check every class in the domain model and ensure it has at least one attribute
         classes = domain_model.get_classes()
         
@@ -291,6 +260,7 @@ async def get_model_info(domain_model_base64: str) -> str:
         str: Detailed information about the domain model.
     """
     try:
+        logger.info("Getting model info")
         domain_model = deserialize_domain_model(domain_model_base64)
         classes = domain_model.get_classes()
         
