@@ -16,6 +16,8 @@ from typing import Any, Dict, List, Union
 
 from mcp.server import FastMCP
 
+from besser.BUML.metamodel.structural import Class, DomainModel
+
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -53,6 +55,7 @@ def deserialize_domain_model(model_base64: str):
                 
     except Exception as e:
         raise RuntimeError(f"Error deserializing model: {str(e)}")
+
 
 @mcp.tool()
 def about() -> str:
@@ -153,6 +156,189 @@ async def add_class(
     except Exception as e:
         return f"Error processing domain model: {str(e)}"
 
+
+@mcp.tool()
+async def add_method_to_class(
+        domain_model_base64: str,
+        name: str,
+        class_name: str,
+        visibility: str = "public",
+        is_abstract: bool = False,
+        parameters: set = set(),
+        type_name:str = "str",
+        code: str = "",
+        timestamp = None,
+        metadata = None,
+        is_derived: bool = False
+) -> str:
+    """Adds a new method to a `Class` instance in a B-UML DomainModel and returns the updated model as base64.
+
+    Args:
+        domain_model_base64 (str): The B-UML domain model as base64 string.
+        name (str): The name of the method.
+        class_name (str): The name of the class that will contain the method.
+        visibility (str): Determines the kind of visibility of the method (public as default).
+        is_abstract (bool): Indicates if the method is abstract (False as default).
+        parameters (set[Parameter]): The set of parameters for the method (set() as default).
+        type_name (str): The name of the type of the method ("str" as default).
+        code (str): code of the method ("" as default).
+        timestamp (datetime): Object creation datetime (default is current time).
+        metadata (Metadata): Metadata information for the method (None as default).
+        is_derived (bool): Inherited from NamedElement, indicates whether the element is derived (False as default).
+
+    Returns:
+        str: The updated domain model as base64 string, or an error message
+             if a class with the same name already exists.
+    """
+    from datetime import datetime
+    from datetime import timezone
+
+    try:
+        from besser.BUML.metamodel.structural import Method  # type: ignore
+    except ImportError as exc:
+        raise RuntimeError(
+            "BESSER library must be installed (`pip install besser`)."
+        ) from exc
+
+    try:
+        logger.info(f"Adding method '{name}' to class '{class_name}'")
+        # Deserialize the domain model
+        domain_model = deserialize_domain_model(domain_model_base64)
+
+        if timestamp is None:
+            timestamp = datetime.now(timezone.utc)
+
+
+        owner = domain_model.get_type_by_name(class_name)
+        existing_methods = owner.methods
+        existing_method_names = {method.name for method in existing_methods}
+
+        method_type = domain_model.get_type_by_name(type_name)
+
+        if name in existing_method_names:
+            logger.warning(f"Method '{name}' already exists in Class '{class_name}'")
+            return f"Error adding method '{name}': A method with name '{name}' already exists in the class '{class_name}'"
+
+        new_method = Method(
+            name,
+            visibility,
+            is_abstract,
+            parameters,
+            method_type,
+            owner,
+            code,
+            timestamp,  # type: ignore[arg-type]
+            metadata,
+            is_derived
+        )
+
+        owner.add_method(new_method)
+        logger.info(f"Successfully added method '{name}' to class '{class_name}'")
+
+        # Return the updated model as base64
+        return serialize_domain_model(domain_model)
+
+    except ValueError as e:
+        # Return error message if class with same name already exists
+        return f"Error adding method '{name}' to class '{class_name}': {str(e)}"
+    except Exception as e:
+        return f"Error processing domain model: {str(e)}"
+
+
+@mcp.tool()
+async def add_attribute_to_class(
+        domain_model_base64: str,
+        name: str,
+        class_name: str,
+        type_name,
+        multiplicity,
+        visibility,
+        is_composite,
+        is_navigable,
+        is_id,
+        is_read_only,
+        timestamp,
+        metadata,
+        is_derived,
+) -> str:
+    """Adds a new attribute to a `Class` instance in a B-UML DomainModel and returns the updated model as base64.
+
+    Args:
+        domain_model_base64 (str): The B-UML domain model as base64 string.
+        name (str): The name of the property.
+        class_name (str): The name of the class that will contain the attribute.
+        type_name (str): The type of the property.
+        multiplicity (Multiplicity): The multiplicity of the property (1..1 as default).
+        visibility (str): The visibility of the property (public as default).
+        is_composite (bool): Indicates whether the property is a composite (False as default).
+        is_navigable (bool): Indicates whether the property is navigable in a relationship (True as default).
+        is_id (bool): Indicates whether the property is an id (False as default).
+        is_read_only (bool): Indicates whether the property is read only (False as default).
+        timestamp (datetime): Object creation datetime (default is current time).
+        metadata (Metadata): Metadata information for the property (None as default).
+        is_derived (bool): Inherited from NamedElement, indicates whether the element is derived (False as default).
+
+    Returns:
+        str: The updated domain model as base64 string, or an error message
+             if a class with the same name already exists.
+    """
+    from datetime import datetime
+    from datetime import timezone
+
+    try:
+        from besser.BUML.metamodel.structural import Property  # type: ignore
+    except ImportError as exc:
+        raise RuntimeError(
+            "BESSER library must be installed (`pip install besser`)."
+        ) from exc
+
+    try:
+        logger.info(f"Adding method '{name}' to class '{class_name}'")
+        # Deserialize the domain model
+        domain_model = deserialize_domain_model(domain_model_base64)
+
+        if timestamp is None:
+            timestamp = datetime.now(timezone.utc)
+
+        owner = domain_model.get_type_by_name(class_name)
+        existing_attributes = owner.attributes
+        existing_attribute_names = {attribute.name for attribute in existing_attributes}
+
+        property_type = domain_model.get_type_by_name(type_name)
+
+        if name in existing_attribute_names:
+            logger.warning(f"Attribute '{name}' already exists in Class '{class_name}'")
+            return f"Error adding attribute '{name}': An attribute with name '{name}' already exists in the class '{class_name}'"
+
+        new_property = Property(
+            name,
+            property_type,
+            owner,
+            multiplicity,
+            visibility,
+            is_composite,
+            is_navigable,
+            is_id,
+            is_read_only,
+            timestamp, # type: ignore[arg-type]
+            metadata,
+            is_derived,
+        )
+
+        owner.add_attribute(new_property)
+        logger.info(f"Successfully added attribute '{name}' to class '{class_name}'")
+
+        # Return the updated model as base64
+        return serialize_domain_model(domain_model)
+
+    except ValueError as e:
+        # Return error message if class with same name already exists
+        return f"Error adding attribute '{name}' to class '{class_name}': {str(e)}"
+    except Exception as e:
+        return f"Error processing domain model: {str(e)}"
+
+
+
 @mcp.tool()
 async def new_model(name: str) -> str:
     """Creates a new B-UML DomainModel with the specified name and returns it as base64.
@@ -245,6 +431,41 @@ async def sql_generation(domain_model_base64: str) -> str:
             else:
                 return f"No SQL generated. The domain model contains {len(classes)} class(es): {', '.join(classes_info)}. The SQL generator may require additional configuration or the classes may not meet SQL generation requirements."
             
+    except Exception as e:
+        # Return error message if SQL generation fails
+        return f"Error generating SQL from domain model: {str(e)}"
+
+
+@mcp.tool()
+async def python_generation(domain_model_base64: str) -> str:
+    """Given a domain model as base64, it creates a set of python classes implementing the model.
+
+    Args:
+        domain_model_base64 (str): The B-UML domain model as base64 string.
+
+    Returns:
+        str: Python representation of the domain model, or an error message if generation fails.
+    """
+    try:
+        from besser.generators.python_classes.python_classes_generator import PythonGenerator  # type: ignore
+        from besser.BUML.metamodel.structural import Property  # type: ignore
+    except ImportError as exc:
+        raise RuntimeError(
+            "BESSER library with SQL generator must be installed (`pip install besser`)."
+        ) from exc
+
+    try:
+        # Deserialize the domain model
+        domain_model = deserialize_domain_model(domain_model_base64)
+
+        # Create SQL generator instance and generate SQL
+        python_generator = PythonGenerator(domain_model)
+        python_output = python_generator.generate()
+
+        # Check if sql_output is not None and not empty string
+        if python_output and python_output.strip():
+            return python_output
+
     except Exception as e:
         # Return error message if SQL generation fails
         return f"Error generating SQL from domain model: {str(e)}"
