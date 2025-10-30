@@ -328,6 +328,75 @@ def register_base64_generator_tools(mcp, logger):
             else:
                 return f"No Python code generated. The domain model contains {len(classes)} class(es): {', '.join(classes_info)}. The Python code generator may require additional configuration or the classes may not meet generation requirements."
 
+    @mcp.tool()
+    def json_schema_generation_base64(domain_model_base64: str) -> str:
+        """Given a domain model as base64, creates the JSON Schema representing the model.
+
+        Args:
+            domain_model_base64 (str): The B-UML domain model as base64 string.
+
+        Returns:
+            str: JSON schema of the domain model, or an error message if generation fails.
+        """
+        # Deserialize the domain model
+        domain_model = deserialize_domain_model(domain_model_base64)
+        out = base_json_generation(domain_model)
+        if out is not None:
+            return out
+        try:
+            with open("./schema.json", "r", encoding="utf-8") as f:
+                lines = f.read().splitlines()
+            content = "\n".join(lines)
+            os.remove("./schema.json")
+            return content
+
+        except Exception as e:
+            # Try to provide more detailed information about why no JSON Schema was generated
+            classes = domain_model.get_classes()
+            classes_info = []
+            for cls in classes:
+                attr_count = len(cls.attributes)
+                classes_info.append(f"{cls.name} ({attr_count} attributes)")
+
+            if not classes:
+                return "No JSON Schema generated. The domain model contains no classes."
+            else:
+                return f"No JSON Schema generated. The domain model contains {len(classes)} class(es): {', '.join(classes_info)}. The JSON Schema generator may require additional configuration or the classes may not meet generation requirements."
+
+    @mcp.tool()
+    def rdf_generation_base64(domain_model_base64: str) -> str:
+        """Given a domain model as base64, it creates the RDF Vocabulary for the model.
+
+        Args:
+            domain_model_base64 (str): The B-UML domain model as base64 string.
+
+        Returns:
+            str: RDF Vocabulary of the domain model, or an error message if generation fails.
+        """
+        # Deserialize the domain model
+        domain_model = deserialize_domain_model(domain_model_base64)
+        out = base_rdf_generation(domain_model)
+        if out is not None:
+            return out
+        try:
+            with open("./vocabulary.ttl", "r", encoding="utf-8") as f:
+                lines = f.read().splitlines()
+            content = "\n".join(lines)
+            os.remove("./vocabulary.ttl")
+            return content
+
+        except Exception as e:
+            # Try to provide more detailed information about why no RDF was generated
+            classes = domain_model.get_classes()
+            classes_info = []
+            for cls in classes:
+                attr_count = len(cls.attributes)
+                classes_info.append(f"{cls.name} ({attr_count} attributes)")
+
+            if not classes:
+                return "No RDF Vocabulary generated. The domain model contains no classes."
+            else:
+                return f"No RDF Vocabulary generated. The domain model contains {len(classes)} class(es): {', '.join(classes_info)}. The RDF Vocabulary generator may require additional configuration or the classes may not meet generation requirements."
 
 
 def register_url_generator_tools(mcp, logger):
@@ -408,6 +477,80 @@ def register_url_generator_tools(mcp, logger):
                 return "No Python code generated. The domain model contains no classes."
             else:
                 return f"No Python code generated. The domain model contains {len(classes)} class(es): {', '.join(classes_info)}. The Python code generator may require additional configuration or the classes may not meet generation requirements."
+
+    @mcp.tool()
+    def json_schema_generation_with_url(domain_model_url: str) -> str:
+        """Given a domain model pointed by the passed URL, creates the JSON Schema representing the model.
+
+        Args:
+            domain_model_url (str): The B-UML domain model URL location.
+
+        Returns:
+            str: JSON schema of the domain model, or an error message if generation fails.
+        """
+        # Get the model
+        serialized_domain_model = download_model_from(domain_model_url)
+        # Deserialize the domain model
+        domain_model = deserialize_domain_model(serialized_domain_model)
+        out = base_json_generation(domain_model)
+        if out is not None:
+            return out
+        try:
+            with open("./schema.json", "r", encoding="utf-8") as f:
+                lines = f.read().splitlines()
+            content = "\n".join(lines)
+            os.remove("./schema.json")
+            return content
+
+        except Exception as e:
+            # Try to provide more detailed information about why no JSON Schema was generated
+            classes = domain_model.get_classes()
+            classes_info = []
+            for cls in classes:
+                attr_count = len(cls.attributes)
+                classes_info.append(f"{cls.name} ({attr_count} attributes)")
+
+            if not classes:
+                return "No JSON Schema generated. The domain model contains no classes."
+            else:
+                return f"No JSON Schema generated. The domain model contains {len(classes)} class(es): {', '.join(classes_info)}. The JSON Schema generator may require additional configuration or the classes may not meet generation requirements."
+
+    @mcp.tool()
+    def rdf_generation_with_url(domain_model_url: str) -> str:
+        """Given a domain model pointed by the passed URL, creates the RDF vocabulary for the model.
+
+        Args:
+            domain_model_url (str): The B-UML domain model URL location.
+
+        Returns:
+            str: RDF vocabulary for the domain model, or an error message if generation fails.
+        """
+        # Get the model
+        serialized_domain_model = download_model_from(domain_model_url)
+        # Deserialize the domain model
+        domain_model = deserialize_domain_model(serialized_domain_model)
+        out = base_rdf_generation(domain_model)
+        if out is not None:
+            return out
+        try:
+            with open("./vocabulary.ttl", "r", encoding="utf-8") as f:
+                lines = f.read().splitlines()
+            content = "\n".join(lines)
+            os.remove("./vocabulary.ttl")
+            return content
+
+        except Exception as e:
+            # Try to provide more detailed information about why no RDF was generated
+            classes = domain_model.get_classes()
+            classes_info = []
+            for cls in classes:
+                attr_count = len(cls.attributes)
+                classes_info.append(f"{cls.name} ({attr_count} attributes)")
+
+            if not classes:
+                return "No RDF vocabulary generated. The domain model contains no classes."
+            else:
+                return f"No RDF vocabulary generated. The domain model contains {len(classes)} class(es): {', '.join(classes_info)}. The RDF vocabulary generator may require additional configuration or the classes may not meet generation requirements."
 
 
 def register_generator_tools(mcp, logger):

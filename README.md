@@ -189,6 +189,19 @@ Use the provided PowerShell installation script:
      }
    }
    ```
+   
+### Distant mode for collaboration
+By using and sharing a URL where the model can be saved multiple users can edit the same model.
+To do so, you have to deploy the MCP server on distant mode using the `-d` or `--dist` option.
+You can change the port used for this server using the `-p` or `--port` option followed by the port number.
+
+With this server, users can change the model by giving the URL as parameter.
+Example prompt:
+```
+Add a class representing users in the model available at the URL https://my-domain.com/model
+```
+
+**Disclaimer:** the distant mode currently has limitations regarding concurrent access and multi-file generation
 
 ### Testing the Connection
 
