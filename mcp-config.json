@@ -1,13 +1,7 @@
 {
-  "mcpServers": {
-    "besser-mcp-server": {
-      "command": "python",
-      "args": [
-        "src/besser_mcp_server/server.py"
-      ],
-      "env": {
-        "PYTHONPATH": "src"
-      }
-    }
-  }
-} 
+   "mcpServers": {
+     "besser-mcp": {
+       "url": "http://127.0.0.1:8000/sse"
+     }
+   }
+ }

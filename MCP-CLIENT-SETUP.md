@@ -2,45 +2,39 @@
 
 This guide explains how to configure MCP clients (like Claude Desktop or Cursor) to connect to the BESSER MCP Server locally.
 
-## Available Tools
-
-The BESSER MCP Server provides the following tools:
-
-- **`about`**: Get information about BESSER and this MCP server
-- **`new_model`**: Create a new B-UML DomainModel with a specified name
-- **`add_class`**: Add a new Class to an existing DomainModel
-
 ## Configuration Files
 
-### Basic Configuration (`mcp-config.json`)
+### Configuration (`mcp-config.json`)
 
-The simplest configuration for connecting to the BESSER MCP server:
+The configuration file for connecting to the BESSER MCP server:
 
 ```json
 {
   "mcpServers": {
-    "besser-mcp-server": {
-      "command": "python",
-      "args": [
-        "src/besser_mcp_server/server.py"
-      ],
-      "env": {
-        "PYTHONPATH": "src"
-      }
+    "besser-mcp": {
+      "url": "http://127.0.0.1:8000/sse"
     }
   }
 }
 ```
 
-### Advanced Configuration (`mcp-config-examples.json`)
-
-Multiple configuration options for different environments:
-
-1. **Python Direct**: Uses system Python directly
-2. **UV Runner**: Uses UV package manager to run the server
-3. **Module Mode**: Runs the server as a Python module
-
 ## Setup Instructions
+
+### For VScode Cline
+
+1. Open the Cline panel on VScode
+2. Click on "Manage MCP Server" at the bottom, then the cog
+3. Clicking on "Configure MCP server" will open the configuration file
+4. Add the "besser-mcp-server" in the "mcpServers" section:
+   ```json
+   {
+     "mcpServers": {
+       "besser-mcp": {
+         "url": "http://127.0.0.1:8000/sse"
+       }
+     }
+   }
+   ```
 
 ### For Claude Desktop
 
@@ -61,22 +55,15 @@ Multiple configuration options for different environments:
    ```json
    {
      "mcpServers": {
-       "besser-mcp-server": {
-         "command": "python",
-         "args": [
-           "/full/path/to/BESSER-MCP-Server/src/besser_mcp_server/server.py"
-         ],
-         "env": {
-           "PYTHONPATH": "/full/path/to/BESSER-MCP-Server/src"
-         }
+       "besser-mcp": {
+         "type": "sse",
+         "url": "http://127.0.0.1:8000/sse"
        }
      }
    }
    ```
 
-4. **Replace `/full/path/to/BESSER-MCP-Server/` with your actual project path**
-
-5. **Restart Claude Desktop**
+4. **Restart Claude Desktop**
 
 ### For Cursor IDE
 
@@ -89,54 +76,14 @@ Multiple configuration options for different environments:
    ```json
    {
      "mcpServers": {
-       "besser-mcp-server": {
-         "command": "python",
-         "args": [
-           "/full/path/to/BESSER-MCP-Server/src/besser_mcp_server/server.py"
-         ],
-         "env": {
-           "PYTHONPATH": "/full/path/to/BESSER-MCP-Server/src"
-         }
+       "besser-mcp": {
+         "url": "http://127.0.0.1:8000/sse"
        }
      }
    }
    ```
 
-3. **Replace `/full/path/to/BESSER-MCP-Server/` with your actual project path**
-
-4. **Restart Cursor**
-
-## Configuration Options Explained
-
-### Using System Python
-```json
-{
-  "command": "python",
-  "args": ["src/besser_mcp_server/server.py"],
-  "env": {
-    "PYTHONPATH": "src"
-  }
-}
-```
-
-### Using UV Package Manager
-```json
-{
-  "command": "uv",
-  "args": ["run", "python", "src/besser_mcp_server/server.py"]
-}
-```
-
-### Using Python Module Mode
-```json
-{
-  "command": "python",
-  "args": ["-m", "besser_mcp_server.server"],
-  "env": {
-    "PYTHONPATH": "src"
-  }
-}
-```
+3. **Restart Cursor**
 
 ## Prerequisites
 
@@ -165,7 +112,7 @@ Before using the MCP server, ensure you have:
 
 After configuring your MCP client:
 
-1. **Start your MCP client** (Claude Desktop or Cursor)
+1. **Start your MCP client**
 2. **Look for the BESSER MCP server** in the available tools/extensions
 3. **Test the connection** by asking:
    - "What is BESSER?" (uses the `about` tool)
@@ -176,29 +123,8 @@ After configuring your MCP client:
 
 ### Common Issues
 
-1. **"Command not found" errors:**
-   - Ensure Python is in your system PATH
-   - Use full paths in the configuration
-
-2. **"Module not found" errors:**
-   - Check that PYTHONPATH is set correctly
+- **"Module not found" errors:**
    - Verify the BESSER library is installed
-
-3. **"Permission denied" errors:**
-   - Ensure the server script has execute permissions
-   - Check file paths are accessible
-
-### Debug Mode
-
-To enable debug logging, add to your configuration:
-```json
-{
-  "env": {
-    "PYTHONPATH": "src",
-    "DEBUG": "true"
-  }
-}
-```
 
 ## Example Usage
 

@@ -1,31 +1,11 @@
 {
-  "mcpServers": {
-    "besser-mcp-server-python": {
-      "command": "python",
-      "args": [
-        "src/besser_mcp_server/server.py"
-      ],
-      "env": {
-        "PYTHONPATH": "src"
-      }
-    },
-    "besser-mcp-server-uv": {
-      "command": "uv",
-      "args": [
-        "run",
-        "python",
-        "src/besser_mcp_server/server.py"
-      ]
-    },
-    "besser-mcp-server-module": {
-      "command": "python",
-      "args": [
-        "-m",
-        "besser_mcp_server.server"
-      ],
-      "env": {
-        "PYTHONPATH": "src"
-      }
-    }
-  }
-} 
+   "mcpServers": {
+     "besser-mcp": {
+       "url": "http://127.0.0.1:8000/sse"
+     },
+     "besser-mcp-typed": {
+       "type": "sse",
+       "url": "http://127.0.0.1:8000/sse"
+     }
+   }
+ }

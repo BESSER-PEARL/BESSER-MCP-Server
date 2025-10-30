@@ -1,10 +1,16 @@
 # BESSER MCP Server - Quick Start Guide
 
 This guide provides the fastest way to get the BESSER MCP Server running with your favorite MCP client.
+The recommended setup to use the BESSER MCP Server freely is through Cline with a free to use model from OpenRouter.
 
-## 🚀 Quick Setup (Windows)
+## Recommended Setup (VScode with Cline)
 
-### Option 1: Automatic Installation (Recommended)
+1. Open the Cline panel on VScode
+2. Click on "Manage MCP Server" at the bottom, then the cog
+3. Clicking on "Configure MCP server" will open the configuration file
+4. Copy `mcp-config.json` content to the opened config file
+
+## 🚀 Quick Setup (Windows Automatic Installation)
 
 Run the PowerShell installation script:
 
@@ -19,41 +25,53 @@ Run the PowerShell installation script:
 .\install-mcp-config.ps1 -Client both
 ```
 
-### Option 2: Manual Configuration
+## Manual Configuration
 
-#### For Cursor IDE:
+### For VScode Cline:
+1. Open the Cline panel on VScode
+2. Click on "Manage MCP Server" at the bottom, then the cog
+3. Clicking on "Configure MCP server" will open the configuration file
+4. Copy `mcp-config.json` content to the opened config file
+
+### For Cursor IDE:
 1. Copy `cursor-mcp-config-windows.json` content to `~/.cursor/mcp.json`
 2. Update paths if your project is in a different location
 
-#### For Claude Desktop:
+### For Claude Desktop:
 1. Copy `claude-desktop-config-windows.json` content to `%APPDATA%\Claude\claude_desktop_config.json`
 2. Update paths if your project is in a different location
 
 ## 📁 Available Configuration Files
 
-| File | Purpose |
-|------|---------|
+| File | Purpose                                     |
+|------|---------------------------------------------|
 | `mcp-config.json` | Basic cross-platform configuration template |
-| `mcp-config-examples.json` | Advanced configuration examples |
-| `claude-desktop-config-windows.json` | Windows-specific Claude Desktop config |
-| `cursor-mcp-config-windows.json` | Windows-specific Cursor config |
-| `install-mcp-config.ps1` | Automatic installation script for Windows |
+| `mcp-config-examples.json` | Multiple configuration examples             |
+| `claude-desktop-config-windows.json` | Windows-specific Claude Desktop config      |
+| `cursor-mcp-config-windows.json` | Windows-specific Cursor config              |
+| `install-mcp-config.ps1` | Automatic installation script for Windows   |
 
-## 🛠️ Available Tools
+[//]: # (## 🛠️ Available Tools)
 
-Once connected, you can use these tools through natural language:
+[//]: # ()
+[//]: # (Once connected, you can use these tools through natural language:)
 
-| Tool | Description | Example Usage |
-|------|-------------|---------------|
-| `about` | Get information about BESSER | "What is BESSER?" |
-| `new_model` | Create a new domain model | "Create a new model called 'ECommerce'" |
-| `add_class` | Add a class to a model | "Add a Customer class to the model" |
+[//]: # ()
+[//]: # (| Tool | Description | Example Usage |)
+
+[//]: # (|------|-------------|---------------|)
+
+[//]: # (| `about` | Get information about BESSER | "What is BESSER?" |)
+
+[//]: # (| `new_model` | Create a new domain model | "Create a new model called 'ECommerce'" |)
+
+[//]: # (| `add_class` | Add a class to a model | "Add a Customer class to the model" |)
 
 ## ✅ Testing Your Setup
 
-1. **Verify server startup:**
+1. **Server startup:**
    ```bash
-   python test_server_startup.py
+   python server.py
    ```
 
 2. **Test in your MCP client:**
@@ -68,7 +86,7 @@ Make sure you have:
 - Python 3.8+
 - Required packages:
   ```bash
-  pip install fastmcp besser
+  pip install mcp besser
   ```
 
 ## 🔧 Troubleshooting
@@ -79,17 +97,6 @@ Make sure you have:
 2. **"Module not found"**: Check PYTHONPATH in configuration
 3. **"Permission denied"**: Run PowerShell as Administrator
 
-### Debug Mode:
-
-Add to your configuration:
-```json
-{
-  "env": {
-    "PYTHONPATH": "C:\\path\\to\\project\\src",
-    "DEBUG": "true"
-  }
-}
-```
 
 ## 📖 Full Documentation
 

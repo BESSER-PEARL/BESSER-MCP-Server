@@ -23,12 +23,9 @@ Write-Host "Project path: $ProjectPath" -ForegroundColor Yellow
 # Configuration template
 $ConfigTemplate = @{
     mcpServers = @{
-        "besser-mcp-server" = @{
-            command = "python"
-            args = @("$ProjectPath\src\besser_mcp_server\server.py")
-            env = @{
-                PYTHONPATH = "$ProjectPath\src"
-            }
+        "besser-mcp" = @{
+            type = "sse"
+            url = "http://127.0.0.1:8000/sse"
         }
     }
 }
