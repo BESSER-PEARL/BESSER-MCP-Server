@@ -1,5 +1,7 @@
 # BESSER-MCP-Server
 
+> ⭐ **Part of [BESSER](https://github.com/BESSER-PEARL/BESSER)**, the open-source low-code platform that turns models into working apps. If this project is useful to you, please [star the main repo](https://github.com/BESSER-PEARL/BESSER) too.
+
 A minimal Model Context Protocol (MCP) server implementation for [BESSER](https://github.com/BESSER-PEARL/BESSER), the Python-based low-code modeling platform.
 
 ## Overview
